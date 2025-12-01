@@ -1,0 +1,175 @@
+local args = {
+    [1] = "Equip",
+    [2] = {
+        ["ID"] = "Gun05"
+    }
+}
+
+game:GetService("ReplicatedStorage").Remotes.ToolRE:FireServer(unpack(args))
+task.wait()
+--// AUTO FARM GUI (FISH + CATCH + 5X SPEED + MOBILE DRAG)
+local player = game:GetService("Players").LocalPlayer
+local UIS = game:GetService("UserInputService")
+
+local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+ScreenGui.Name = "AutoFarmGUI"
+ScreenGui.ResetOnSpawn = false
+
+local Button = Instance.new("TextButton", ScreenGui)
+Button.Size = UDim2.new(0, 140, 0, 45)
+Button.Position = UDim2.new(0.05, 0, 0.3, 0)
+Button.Text = "Auto Farm: OFF"
+Button.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+Button.TextScaled = true
+Button.Active = true
+
+local autoFarm = false
+
+----------------------------------------------------------------
+-- ⭐ MOBILE + PC DRAGGING SYSTEM ⭐
+----------------------------------------------------------------
+local dragging = false
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    Button.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end
+
+Button.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+        
+        dragging = true
+        dragStart = input.Position
+        startPos = Button.Position
+    end
+end)
+
+Button.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+        
+        dragging = false
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch) then
+        
+        update(input)
+    end
+end)
+
+----------------------------------------------------------------
+-- ⭐ NEAREST ROOT FINDER ⭐
+----------------------------------------------------------------
+local function getNearestRoot()
+    local nearest
+    local minDistance = math.huge
+
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
+
+    local hrp = char.HumanoidRootPart
+
+    for _, sea in ipairs(workspace.WorldSea:GetChildren()) do
+        for _, fish in ipairs(sea:GetChildren()) do
+            if fish:FindFirstChild("Model") and fish.Model:FindFirstChild("Root") then
+                local root = fish.Model.Root
+                local dist = (root.Position - hrp.Position).Magnitude
+
+                if dist < minDistance then
+                    minDistance = dist
+                    nearest = root.CFrame
+                end
+            end
+        end
+    end
+
+    return nearest
+end
+
+----------------------------------------------------------------
+-- ⭐ TOOL FINDER (Harpoon06 / Gun05 / any tool) ⭐
+----------------------------------------------------------------
+local function findTool()
+    local char = player.Character
+    if not char then return nil end
+
+    local preferred = { "Harpoon06", "Gun05", "Harpoon", "Gun", "Catcher" }
+
+    for _, name in ipairs(preferred) do
+        if char:FindFirstChild(name) then
+            return char[name]
+        end
+    end
+
+    for _, item in ipairs(char:GetChildren()) do
+        if item:IsA("Tool") then
+            return item
+        end
+    end
+
+    return nil
+end
+
+----------------------------------------------------------------
+-- ⭐ AUTO CAST (Fish + Catch) ⭐
+----------------------------------------------------------------
+local function autoCast()
+    local rootCFrame = getNearestRoot()
+    if not rootCFrame then return end
+
+    local tool = findTool()
+    if not tool then return end
+
+    local args = {
+        [1] = "Fire",
+        [2] = {
+            cameraOrigin = workspace.CurrentCamera.CFrame.Position,
+            player = player,
+            toolInstance = tool,
+            destination = rootCFrame.Position,
+            isCharge = false
+        }
+    }
+
+    game:GetService("ReplicatedStorage").Remotes.FireRE:FireServer(unpack(args))
+end
+
+----------------------------------------------------------------
+-- ⭐ SUPER FAST LOOP (5× speed) ⭐
+----------------------------------------------------------------
+task.spawn(function()
+    while true do
+        if autoFarm then
+            for i = 1, 5 do
+                autoCast()
+                task.wait() -- ultra-fast (1 frame)
+            end
+        end
+        task.wait(0.03)
+    end
+end)
+
+----------------------------------------------------------------
+-- ⭐ BUTTON TOGGLE ⭐
+----------------------------------------------------------------
+Button.MouseButton1Click:Connect(function()
+    autoFarm = not autoFarm
+    if autoFarm then
+        Button.Text = "Auto Farm: ON"
+        Button.BackgroundColor3 = Color3.fromRGB(70, 255, 70)
+    else
+        Button.Text = "Auto Farm: OFF"
+        Button.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+    end
+end)
