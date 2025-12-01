@@ -1,0 +1,151 @@
+--// AUTO FISH GUI
+local player = game:GetService("Players").LocalPlayer
+local UIS = game:GetService("UserInputService")
+
+local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+ScreenGui.Name = "AutoFishGUI"
+ScreenGui.ResetOnSpawn = false
+
+local Button = Instance.new("TextButton", ScreenGui)
+Button.Size = UDim2.new(0, 120, 0, 40)
+Button.Position = UDim2.new(0.05, 0, 0.3, 0)
+Button.Text = "Auto Fish: OFF"
+Button.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+Button.Active = true
+
+local autoFish = false
+
+------------------------------------------------------------------
+-- ⭐ MOBILE & PC DRAGGING SYSTEM ⭐
+------------------------------------------------------------------
+
+local dragging = false
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    Button.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end
+
+Button.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = Button.Position
+    end
+end)
+
+Button.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch) then
+        update(input)
+    end
+end)
+
+------------------------------------------------------------------
+-- FIND NEAREST ROOT
+------------------------------------------------------------------
+
+local function getNearestRoot()
+    local nearest
+    local minDistance = math.huge
+
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+
+    local hrp = character.HumanoidRootPart
+
+    for _, sea in ipairs(workspace.WorldSea:GetChildren()) do
+        for _, fish in ipairs(sea:GetChildren()) do
+            if fish:FindFirstChild("Model") and fish.Model:FindFirstChild("Root") then
+                local root = fish.Model.Root
+                local dist = (root.Position - hrp.Position).Magnitude
+
+                if dist < minDistance then
+                    minDistance = dist
+                    nearest = root.CFrame
+                end
+            end
+        end
+    end
+
+    return nearest
+end
+
+------------------------------------------------------------------
+-- FIRE SERVER (ANY HARPOON)
+------------------------------------------------------------------
+
+local function castHarpoon()
+    local char = player.Character
+    if not char then return end
+
+    -- FIND ANY HARPOON TOOL
+    local harpoon
+    for _, item in ipairs(char:GetChildren()) do
+        if item:IsA("Tool") and string.find(item.Name, "Harpoon") then
+            harpoon = item
+            break
+        end
+    end
+
+    if not harpoon then return end
+
+    local rootCFrame = getNearestRoot()
+    if not rootCFrame then return end
+
+    local args = {
+        [1] = "Fire",
+        [2] = {
+            cameraOrigin = workspace.CurrentCamera.CFrame.Position,
+            player = player,
+            toolInstance = harpoon,
+            destination = rootCFrame.Position,
+            isCharge = true
+        }
+    }
+
+    game:GetService("ReplicatedStorage").Remotes.FireRE:FireServer(unpack(args))
+end
+
+------------------------------------------------------------------
+-- AUTO LOOP
+------------------------------------------------------------------
+
+task.spawn(function()
+    while true do
+        if autoFish then
+            castHarpoon()
+        end
+        task.wait(0.1)
+    end
+end)
+
+------------------------------------------------------------------
+-- BUTTON TOGGLE
+------------------------------------------------------------------
+
+Button.MouseButton1Click:Connect(function()
+    autoFish = not autoFish
+    if autoFish then
+        Button.Text = "Auto Fish: ON"
+        Button.BackgroundColor3 = Color3.fromRGB(70, 255, 70)
+    else
+        Button.Text = "Auto Fish: OFF"
+        Button.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+    end
+end)
