@@ -1,12 +1,3 @@
-local args = {
-    [1] = "Equip",
-    [2] = {
-        ["ID"] = "Gun05"
-    }
-}
-
-game:GetService("ReplicatedStorage").Remotes.ToolRE:FireServer(unpack(args))
-task.wait()
 --// AUTO FARM GUI (FISH + CATCH + 5X SPEED + MOBILE DRAG)
 local player = game:GetService("Players").LocalPlayer
 local UIS = game:GetService("UserInputService")
@@ -15,6 +6,7 @@ local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 ScreenGui.Name = "AutoFarmGUI"
 ScreenGui.ResetOnSpawn = false
 
+-- Main: Auto Farm Button
 local Button = Instance.new("TextButton", ScreenGui)
 Button.Size = UDim2.new(0, 140, 0, 45)
 Button.Position = UDim2.new(0.05, 0, 0.3, 0)
@@ -23,47 +15,71 @@ Button.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
 Button.TextScaled = true
 Button.Active = true
 
+-- Equip Golden Gun Button
+local EquipBtn = Instance.new("TextButton", ScreenGui)
+EquipBtn.Size = UDim2.new(0, 140, 0, 38)
+EquipBtn.Position = UDim2.new(0.05, 0, 0.3, Button.Size.Y.Offset + 10)
+EquipBtn.Text = "Equip Golden Gun"  -- <== Changed label here
+EquipBtn.BackgroundColor3 = Color3.fromRGB(70, 180, 73)
+EquipBtn.TextColor3 = Color3.new(1,1,1)
+EquipBtn.Font = Enum.Font.SourceSansBold
+EquipBtn.TextScaled = true
+EquipBtn.Active = true
+
 local autoFarm = false
 
 ----------------------------------------------------------------
--- ⭐ MOBILE + PC DRAGGING SYSTEM ⭐
+-- ⭐ MOBILE + PC DRAGGING SYSTEM (Both Buttons) ⭐
 ----------------------------------------------------------------
 local dragging = false
 local dragStart
-local startPos
+local startPosButton
+local startPosEquip
 
 local function update(input)
     local delta = input.Position - dragStart
     Button.Position = UDim2.new(
-        startPos.X.Scale,
-        startPos.X.Offset + delta.X,
-        startPos.Y.Scale,
-        startPos.Y.Offset + delta.Y
+        startPosButton.X.Scale,
+        startPosButton.X.Offset + delta.X,
+        startPosButton.Y.Scale,
+        startPosButton.Y.Offset + delta.Y
     )
+    EquipBtn.Position = UDim2.new(
+        startPosEquip.X.Scale,
+        startPosEquip.X.Offset + delta.X,
+        startPosEquip.Y.Scale,
+        startPosEquip.Y.Offset + delta.Y
+    )
+end
+
+local function dragBegin(input)
+    dragging = true
+    dragStart = input.Position
+    startPosButton = Button.Position
+    startPosEquip = EquipBtn.Position
+end
+
+local function dragEnd(input)
+    dragging = false
 end
 
 Button.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
         or input.UserInputType == Enum.UserInputType.Touch then
-        
-        dragging = true
-        dragStart = input.Position
-        startPos = Button.Position
+        dragBegin(input)
     end
 end)
-
-Button.InputEnded:Connect(function(input)
+EquipBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
         or input.UserInputType == Enum.UserInputType.Touch then
-        
-        dragging = false
+        dragBegin(input)
     end
 end)
-
+Button.InputEnded:Connect(dragEnd)
+EquipBtn.InputEnded:Connect(dragEnd)
 UIS.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
         or input.UserInputType == Enum.UserInputType.Touch) then
-        
         update(input)
     end
 end)
@@ -172,4 +188,17 @@ Button.MouseButton1Click:Connect(function()
         Button.Text = "Auto Farm: OFF"
         Button.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
     end
+end)
+
+----------------------------------------------------------------
+-- ⭐ EQUIP GOLDEN GUN BUTTON FUNCTION ⭐
+----------------------------------------------------------------
+EquipBtn.MouseButton1Click:Connect(function()
+    local args = {
+        [1] = "Equip",
+        [2] = {
+            ["ID"] = "Gun05"
+        }
+    }
+    game:GetService("ReplicatedStorage").Remotes.ToolRE:FireServer(unpack(args))
 end)
