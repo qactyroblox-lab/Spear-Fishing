@@ -15,19 +15,6 @@ Button.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
 Button.TextScaled = true
 Button.Active = true
 
--- Equip Golden Gun Button
-local EquipBtn = Instance.new("TextButton", ScreenGui)
-EquipBtn.Size = UDim2.new(0, 140, 0, 38)
-EquipBtn.Position = UDim2.new(0.05, 0, 0.3, Button.Size.Y.Offset + 10)
-EquipBtn.Text = "Equip Golden Gun"  -- <== Changed label here
-EquipBtn.BackgroundColor3 = Color3.fromRGB(70, 180, 73)
-EquipBtn.TextColor3 = Color3.new(1,1,1)
-EquipBtn.Font = Enum.Font.SourceSansBold
-EquipBtn.TextScaled = true
-EquipBtn.Active = true
-
-local autoFarm = false
-
 ----------------------------------------------------------------
 -- ⭐ MOBILE + PC DRAGGING SYSTEM (Both Buttons) ⭐
 ----------------------------------------------------------------
@@ -188,17 +175,4 @@ Button.MouseButton1Click:Connect(function()
         Button.Text = "Auto Farm: OFF"
         Button.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
     end
-end)
-
-----------------------------------------------------------------
--- ⭐ EQUIP GOLDEN GUN BUTTON FUNCTION ⭐
-----------------------------------------------------------------
-EquipBtn.MouseButton1Click:Connect(function()
-    local args = {
-        [1] = "Equip",
-        [2] = {
-            ["ID"] = "Gun05"
-        }
-    }
-    game:GetService("ReplicatedStorage").Remotes.ToolRE:FireServer(unpack(args))
 end)
