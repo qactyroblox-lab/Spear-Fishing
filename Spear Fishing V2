@@ -6,7 +6,7 @@ local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 ScreenGui.Name = "AutoFarmGUI"
 ScreenGui.ResetOnSpawn = false
 
--- Main: Auto Farm Button
+-- Main Auto Farm Button
 local Button = Instance.new("TextButton", ScreenGui)
 Button.Size = UDim2.new(0, 140, 0, 45)
 Button.Position = UDim2.new(0.05, 0, 0.3, 0)
@@ -15,38 +15,32 @@ Button.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
 Button.TextScaled = true
 Button.Active = true
 
-----------------------------------------------------------------
--- ⭐ MOBILE + PC DRAGGING SYSTEM (Both Buttons) ⭐
-----------------------------------------------------------------
+local autoFarm = false
+
+------------------------------------------------------------------
+-- ⭐ MOBILE + PC DRAGGING FOR AUTO FARM BUTTON ONLY ⭐
+------------------------------------------------------------------
 local dragging = false
 local dragStart
-local startPosButton
-local startPosEquip
+local startPos
 
 local function update(input)
     local delta = input.Position - dragStart
     Button.Position = UDim2.new(
-        startPosButton.X.Scale,
-        startPosButton.X.Offset + delta.X,
-        startPosButton.Y.Scale,
-        startPosButton.Y.Offset + delta.Y
-    )
-    EquipBtn.Position = UDim2.new(
-        startPosEquip.X.Scale,
-        startPosEquip.X.Offset + delta.X,
-        startPosEquip.Y.Scale,
-        startPosEquip.Y.Offset + delta.Y
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
     )
 end
 
 local function dragBegin(input)
     dragging = true
     dragStart = input.Position
-    startPosButton = Button.Position
-    startPosEquip = EquipBtn.Position
+    startPos = Button.Position
 end
 
-local function dragEnd(input)
+local function dragEnd()
     dragging = false
 end
 
@@ -56,14 +50,9 @@ Button.InputBegan:Connect(function(input)
         dragBegin(input)
     end
 end)
-EquipBtn.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-        dragBegin(input)
-    end
-end)
+
 Button.InputEnded:Connect(dragEnd)
-EquipBtn.InputEnded:Connect(dragEnd)
+
 UIS.InputChanged:Connect(function(input)
     if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
         or input.UserInputType == Enum.UserInputType.Touch) then
@@ -71,13 +60,12 @@ UIS.InputChanged:Connect(function(input)
     end
 end)
 
-----------------------------------------------------------------
--- ⭐ NEAREST ROOT FINDER ⭐
-----------------------------------------------------------------
+------------------------------------------------------------------
+-- ⭐ NEAREST ROOT ⭐
+------------------------------------------------------------------
 local function getNearestRoot()
     local nearest
     local minDistance = math.huge
-
     local char = player.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
 
@@ -88,7 +76,6 @@ local function getNearestRoot()
             if fish:FindFirstChild("Model") and fish.Model:FindFirstChild("Root") then
                 local root = fish.Model.Root
                 local dist = (root.Position - hrp.Position).Magnitude
-
                 if dist < minDistance then
                     minDistance = dist
                     nearest = root.CFrame
@@ -100,9 +87,9 @@ local function getNearestRoot()
     return nearest
 end
 
-----------------------------------------------------------------
--- ⭐ TOOL FINDER (Harpoon06 / Gun05 / any tool) ⭐
-----------------------------------------------------------------
+------------------------------------------------------------------
+-- ⭐ TOOL FINDER ⭐
+------------------------------------------------------------------
 local function findTool()
     local char = player.Character
     if not char then return nil end
@@ -115,6 +102,7 @@ local function findTool()
         end
     end
 
+    -- fallback if ANY tool exists
     for _, item in ipairs(char:GetChildren()) do
         if item:IsA("Tool") then
             return item
@@ -124,9 +112,9 @@ local function findTool()
     return nil
 end
 
-----------------------------------------------------------------
--- ⭐ AUTO CAST (Fish + Catch) ⭐
-----------------------------------------------------------------
+------------------------------------------------------------------
+-- ⭐ AUTO CAST ⭐
+------------------------------------------------------------------
 local function autoCast()
     local rootCFrame = getNearestRoot()
     if not rootCFrame then return end
@@ -144,28 +132,27 @@ local function autoCast()
             isCharge = false
         }
     }
-
     game:GetService("ReplicatedStorage").Remotes.FireRE:FireServer(unpack(args))
 end
 
-----------------------------------------------------------------
--- ⭐ SUPER FAST LOOP (5× speed) ⭐
-----------------------------------------------------------------
+------------------------------------------------------------------
+-- ⭐ SUPER FAST LOOP (5x) ⭐
+------------------------------------------------------------------
 task.spawn(function()
     while true do
         if autoFarm then
             for i = 1, 5 do
                 autoCast()
-                task.wait() -- ultra-fast (1 frame)
+                task.wait()
             end
         end
         task.wait(0.03)
     end
 end)
 
-----------------------------------------------------------------
--- ⭐ BUTTON TOGGLE ⭐
-----------------------------------------------------------------
+------------------------------------------------------------------
+-- ⭐ TOGGLE BUTTON ⭐
+------------------------------------------------------------------
 Button.MouseButton1Click:Connect(function()
     autoFarm = not autoFarm
     if autoFarm then
